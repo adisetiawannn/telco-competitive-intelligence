@@ -1,3 +1,4 @@
+# .gitignore untuk proyek NLP competitive-intelligence
 # Environment
 .env
 .venv/
