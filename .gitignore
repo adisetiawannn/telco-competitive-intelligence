@@ -1,0 +1,54 @@
+# Environment
+.env
+.venv/
+venv/
+env/
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_meta
+
+# Data — jangan commit raw/processed data
+data/raw/
+data/processed/
+data/external/
+
+# Outputs
+outputs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+logs/
+
+# Model files (terlalu besar)
+outputs/models/*.pkl
+outputs/models/*.h5
+*.model
+
+# VS Code
+.vscode/settings.json
+EOF
