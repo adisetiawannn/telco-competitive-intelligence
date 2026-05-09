@@ -34,6 +34,11 @@ class KompetitorConfig :
 
 KOMPETITOR = [
     KompetitorConfig(
+        nama="telkom",
+        keywords=["telkom", "telkom indonesia", "Telkom", "PT Telkomunikasi Indonesia"],
+        segmen="both"
+    ),
+    KompetitorConfig(
         nama="Telkomsel",
         keywords=["telkomsel", "tsel", "indihome", "by.u"],
         segmen="both"
@@ -55,7 +60,7 @@ KOMPETITOR = [
     ),
     KompetitorConfig(
         nama="MyRepublic",
-        keywords=["myrepublic", "my republic"],
+        keywords=["myrepublic", "my republic","my-republic", "my republic indonesia","myrep"],
         segmen="both"
     ),
     KompetitorConfig(
@@ -63,6 +68,16 @@ KOMPETITOR = [
         keywords=["icon+", "iconplus", "icon plus"],
         segmen="both"
     ),
+    KompetitorConfig(
+    nama="General Telco",
+    keywords=[
+        "telekomunikasi", "operator seluler", "provider internet",
+        "layanan internet", "fixed broadband", "fiber optik", 
+        "5g indonesia", "indibiz",
+        "telkom indonesia", "tlkm","isat","excl"
+    ],
+    segmen="both"
+),
 ]
 
 # ============================================================
@@ -84,6 +99,34 @@ SOURCES = [
         kategori="bisnis_teknologi",
         bahasa="indonesia"
     ),
+    NewsSource(
+        nama="CNN Indonesia Technology",
+        url="https://www.cnnindonesia.com/teknologi/rss",
+        kompetitor="general",
+        kategori="bisnis_teknologi",
+        bahasa="indonesia"
+    ),
+    NewsSource(
+        nama="tirto id",
+        url="https://tirto.id/sitemap/r/google-discover",
+        kompetitor="general",
+        kategori="general",
+        bahasa="indonesia"
+    ),
+    NewsSource(
+        nama="Telko ID",
+        url="https://telko.id/feed",
+        kompetitor="general",
+        kategori="telko_spesifik",
+        bahasa="indonesia"
+    ),
+    NewsSource(
+        nama="Selular ID",
+        url="https://selular.id/feed",
+        kompetitor="general",
+        kategori="telko_spesifik",
+        bahasa="indonesia"
+    ),    
 ]
 
 # ============================================================
