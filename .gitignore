@@ -53,3 +53,8 @@ outputs/models/*.h5
 # VS Code
 .vscode/settings.json
 EOF
+
+# all database files
+*.db
+*.sqlite
+*.sqlite3
