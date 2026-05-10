@@ -6,8 +6,6 @@ ssl._create_default_https_context = lambda: ssl.create_default_context(
     cafile="/Users/960169/digital-hub/02-nlp-project/telco-competitive-intelligence/.venv/lib/python3.11/site-packages/certifi/cacert.pem"
 )
 
-# src/ingestion/rss_collector.py
-
 import feedparser
 import sqlite3
 import json
@@ -19,8 +17,10 @@ from typing import List, Dict, Optional
 from configs.sources import (
     get_active_sources,
     is_artikel_relevan,
-    NewsSource
+    NewsSource,
+    load_sources_from_yaml   # ← load yaml file from discovery results
 )
+
 # ============================================================
 # Clean HTML dari summary sebelum filtering
 # ============================================================
@@ -37,6 +37,39 @@ def clean_html(teks: Optional[object]) -> str:
         teks = str(teks)
     soup = BeautifulSoup(teks, "html.parser")
     return soup.get_text(separator=" ").strip()
+
+
+# ============================================================
+# Date Filte: cek apakah artikel masih dalam rentang waktu yang relevan
+# ============================================================
+
+from datetime import datetime, timezone, timedelta
+import email.utils
+
+def is_artikel_recent(published_str: str, max_days: int = 60) -> bool:
+    """
+    Check apakah artikel masih dalam rentang waktu yang relevan.
+    Default: maksimal 60 hari ke belakang.
+    Return True kalau recent, False kalau terlalu lama.
+    """
+    if not published_str:
+        return True  # kalau tidak ada tanggal, anggap recent
+
+    try:
+        # RSS menggunakan format RFC 2822
+        # contoh: "Fri, 05 May 2023 07:00:00 GMT"
+        parsed_date = email.utils.parsedate_to_datetime(published_str)
+
+        # Normalize ke UTC untuk comparison yang konsisten
+        if parsed_date.tzinfo is None:
+            parsed_date = parsed_date.replace(tzinfo=timezone.utc)
+
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=max_days)
+        return parsed_date >= cutoff_date
+
+    except Exception:
+        return True  # kalau parsing gagal, anggap recent
+
 
 # ============================================================
 # LOGGING SETUP
@@ -183,10 +216,11 @@ def run_collection() -> Dict:
         "total_relevant": 0,
         "total_saved": 0,
         "total_duplicate": 0,
+        "total_outdated": 0,
         "sources_processed": 0
     }
 
-    sources = get_active_sources()
+    sources = load_sources_from_yaml() or get_active_sources()
     logger.info(f"Processing {len(sources)} active sources")
 
     for source in sources:
@@ -196,8 +230,15 @@ def run_collection() -> Dict:
 
         for artikel in articles:
             teks_untuk_filter = f"{artikel['judul']} {artikel['summary']}"
-
+                    
+            # relevansi da date filter
+            # Filter 1 — relevance check
             if not is_artikel_relevan(teks_untuk_filter):
+                continue
+
+            # Filter 2 — date check (harus di sini, bukan setelah return)
+            if not is_artikel_recent(artikel['published'], max_days=60):
+                stats["total_outdated"] += 1
                 continue
 
             stats["total_relevant"] += 1
@@ -209,10 +250,8 @@ def run_collection() -> Dict:
                 stats["total_duplicate"] += 1
 
     conn.close()
-
     logger.info(f"Collection complete: {stats}")
     return stats
-
 
 # ============================================================
 # ENTRY POINT
@@ -226,3 +265,4 @@ if __name__ == "__main__":
     print(f"  Relevant articles : {stats['total_relevant']}")
     print(f"  Newly saved       : {stats['total_saved']}")
     print(f"  Duplicates skipped: {stats['total_duplicate']}")
+    print(f"  Outdated skipped  : {stats['total_outdated']}")

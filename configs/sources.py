@@ -1,6 +1,13 @@
 # data class source
 from dataclasses import dataclass
+from pathlib import Path
 from typing import List, Optional
+
+# tambahkan di bagian import atas
+import yaml
+import logging
+
+logger = logging.getLogger(__name__)
 
 # ============================================================
 # DATA STRUCTURE DEFINITION
@@ -152,3 +159,47 @@ def is_artikel_relevan(teks: str) -> bool:
     """
     teks_lower = teks.lower()
     return any(keyword in teks_lower for keyword in get_all_keywords())
+
+# ============================================================
+# LOAD YAML FILE
+# ============================================================
+
+def load_sources_from_yaml(
+    yaml_path: str = "configs/rss_feeds.yaml"
+) -> List[NewsSource]:
+    """
+    Load RSS sources dari YAML file hasil rss_discovery.
+    Fallback ke hardcoded SOURCES kalau YAML tidak ditemukan.
+    """
+    yaml_file = Path(yaml_path)
+
+    if not yaml_file.exists():
+        logger.warning(
+            f"YAML tidak ditemukan di {yaml_path}, "
+            f"menggunakan hardcoded sources sebagai fallback."
+        )
+        return SOURCES
+
+    with open(yaml_file, "r", encoding="utf-8") as f:
+        feeds = yaml.safe_load(f)
+
+    if not feeds:
+        logger.warning("YAML kosong, menggunakan hardcoded sources.")
+        return SOURCES
+
+    sources = []
+    for key, info in feeds.items():
+        # Skip entry yang tidak valid
+        if not isinstance(info, dict) or "url" not in info:
+            continue
+
+        sources.append(NewsSource(
+            nama=info.get("title", key),
+            url=info["url"],
+            kompetitor=info.get("keyword", "general"),
+            kategori=info.get("category", "umum"),
+            aktif=True
+        ))
+
+    logger.info(f"Loaded {len(sources)} sources dari {yaml_path}")
+    return sources

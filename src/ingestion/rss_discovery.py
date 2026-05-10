@@ -1,5 +1,6 @@
 # src/ingestion/rss_discovery.py
 
+import logging
 import requests
 import feedparser
 import yaml
@@ -7,6 +8,8 @@ import time
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse, quote
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 class RSSDiscovery:
@@ -211,7 +214,8 @@ class RSSDiscovery:
                         continue
                     found.append(url)
                     print(f"  [brute-force] FOUND: {url}")
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Failed {url}: {e}")
                 continue
         return found
 

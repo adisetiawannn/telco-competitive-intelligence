@@ -28,3 +28,6 @@ requests>=2.31.0
 
 # RSS feed parsing
 feedparser>=6.0.0
+
+# yaml reader
+pyyaml
