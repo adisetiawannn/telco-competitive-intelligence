@@ -1,60 +1,71 @@
-# .gitignore untuk proyek NLP competitive-intelligence
-# Environment
+# ============================================================
+# TELCO COMPETITIVE INTELLIGENCE — .gitignore
+# ============================================================
+
+# ── Credentials & secrets ───────────────────────────────────
 .env
+.env.local
+.env.*.local
+
+# ── Python environment ──────────────────────────────────────
 .venv/
 venv/
 env/
-.env.local
+ENV/
 
-# Python
+# ── Python artifacts ────────────────────────────────────────
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+*.egg
 *.egg-info/
 dist/
 build/
-*.egg
+.eggs/
 
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Jupyter
+# ── Jupyter ─────────────────────────────────────────────────
 .ipynb_checkpoints/
 *.ipynb_meta
 
-# Data — jangan commit raw/processed data
-data/raw/
-data/processed/
-data/external/
-
-# Outputs
-outputs/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-*.swp
-
-# Logs
-*.log
-logs/
-
-# Model files (terlalu besar)
-outputs/models/*.pkl
-outputs/models/*.h5
-*.model
-
-# VS Code
-.vscode/settings.json
-EOF
-
-# all database files
+# ── Database & data files ───────────────────────────────────
 *.db
 *.sqlite
 *.sqlite3
+data/raw/
+data/processed/
+data/external/
+data/articles_backup_*.db
+
+# ── Config files dengan intelligence ────────────────────────
+configs/rss_feeds.yaml
+
+# ── Output & model files ────────────────────────────────────
+outputs/
+*.pkl
+*.h5
+*.model
+*.pt
+*.pth
+
+# ── Log files ───────────────────────────────────────────────
+*.log
+logs/
+
+# ── OS files ────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+Thumbs.db
+._*
+
+# ── IDE ─────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+
+# ── Testing ─────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
