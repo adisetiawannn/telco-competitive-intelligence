@@ -16,6 +16,8 @@ from scripts.migrations import (
     m003_nlp_results,
     m004_competitor_mentions,
     m005_competitor_daily_stats,
+    m006_fetch_attempts,
+    m006_fetch_attempts,
 )
 
 logging.basicConfig(
@@ -25,12 +27,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 DB_PATH    = "data/articles.db"
+
+# Tambahkan ke list MIGRATIONS
 MIGRATIONS = [
     m001_alter_articles,
     m002_article_contents,
     m003_nlp_results,
     m004_competitor_mentions,
     m005_competitor_daily_stats,
+    m006_fetch_attempts,
 ]
 
 

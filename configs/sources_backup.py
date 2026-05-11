@@ -1,28 +1,30 @@
-# configs/sources.py
+# data class source
 
-import yaml
-import logging
-import email.utils
-from dataclasses import dataclass, field
-from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import List, Optional
+from dataclasses import dataclass, field
+
+# tambahkan di bagian import atas
+import yaml
+import logging
 
 logger = logging.getLogger(__name__)
 
-
 # ============================================================
-# DATA STRUCTURES
+# DATA STRUCTURE DEFINITION
 # ============================================================
-
 @dataclass
 class NewsSource:
-    nama:       str
-    url:        str
-    kompetitor: str
-    kategori:   str
-    aktif:      bool          = True
-    bahasa:     Optional[str] = None
+    """
+    Representasi satu sumber berita yang akan dipantau.
+    Menggunakan dataclass untuk type safety dan self-documentation.
+    """
+    nama : str
+    url : str
+    kompetitor : str
+    kategori : str
+    aktif : bool = True
+    bahasa : Optional[str] = None
 
 
 @dataclass
@@ -31,11 +33,9 @@ class KompetitorConfig:
     keywords:       List[str]
     segmen:         str
     brand_keywords: List[str] = field(default_factory=list)
+    # brand_keywords = keyword high-confidence yang identik dengan brand
+    # jika kosong, pakai keywords sebagai fallback
 
-
-# ============================================================
-# KOMPETITOR CONFIG
-# ============================================================
 
 KOMPETITOR = [
     KompetitorConfig(
@@ -82,21 +82,73 @@ KOMPETITOR = [
     ),
     KompetitorConfig(
         nama="General Telco",
+        # Industry keywords — low confidence, tidak cukup sendirian
         keywords=[
             "operator seluler", "provider internet",
             "fixed broadband", "fiber optik",
             "5g indonesia", "indibiz", "frekuensi 700",
             "spektrum frekuensi", "lelang frekuensi"
         ],
-        brand_keywords=[],
+        brand_keywords=[],  # tidak ada brand spesifik
         segmen="both"
     ),
 ]
 
+# ============================================================
+# RSS FEED SOURCES
+# ============================================================
+
+SOURCES = [
+    NewsSource(
+        nama="Detik Inet",
+        url="https://inet.detik.com/rss",
+        kompetitor="general",
+        kategori="teknologi",
+        bahasa="indonesia"
+    ),
+    NewsSource(
+        nama="CNBC Indonesia Tech",
+        url="https://www.cnbcindonesia.com/tech/rss",
+        kompetitor="general",
+        kategori="bisnis_teknologi",
+        bahasa="indonesia"
+    ),
+    NewsSource(
+        nama="CNN Indonesia Technology",
+        url="https://www.cnnindonesia.com/teknologi/rss",
+        kompetitor="general",
+        kategori="bisnis_teknologi",
+        bahasa="indonesia"
+    ),
+    NewsSource(
+        nama="tirto id",
+        url="https://tirto.id/sitemap/r/google-discover",
+        kompetitor="general",
+        kategori="general",
+        bahasa="indonesia"
+    ),
+    NewsSource(
+        nama="Telko ID",
+        url="https://telko.id/feed",
+        kompetitor="general",
+        kategori="telko_spesifik",
+        bahasa="indonesia"
+    ),
+    NewsSource(
+        nama="Selular ID",
+        url="https://selular.id/feed",
+        kompetitor="general",
+        kategori="telko_spesifik",
+        bahasa="indonesia"
+    ),    
+]
 
 # ============================================================
-# KEYWORD HELPERS
+# HELPER FUNCTIONS
 # ============================================================
+def get_active_sources() -> List[NewsSource]:
+    """Return hanya sources yang aktif."""
+    return [s for s in SOURCES if s.aktif]
 
 def get_all_keywords() -> List[str]:
     result = []
@@ -112,110 +164,97 @@ def get_brand_keywords() -> List[str]:
     return list(set(result))
 
 
-# ============================================================
-# RELEVANCE SCORING
-# ============================================================
+def hitung_relevansi_score(judul: str, summary: str) -> int:
+    """
+    Scoring system untuk relevansi artikel.
+    Return integer score — makin tinggi makin relevan.
 
-RELEVANSI_THRESHOLD = 2
-import re
-
-def keyword_match(keyword: str, teks: str) -> bool:
-    """Match keyword dengan word boundary — cegah substring false positive."""
-    pattern = r'\b' + re.escape(keyword) + r'\b'
-    return bool(re.search(pattern, teks, re.IGNORECASE))
-
-
-def hitung_relevansi_score(judul: str, summary: str = "") -> int:
-    score   = 0
+    Scoring rules:
+    - Brand keyword di judul     : 3 poin
+    - Brand keyword di summary   : 2 poin
+    - Industry keyword di judul  : 2 poin
+    - Industry keyword di summary: 1 poin
+    """
+    score = 0
     judul_lower   = judul.lower()
     summary_lower = summary.lower() if summary else ""
 
     for kompetitor in KOMPETITOR:
         is_general = kompetitor.nama == "General Telco"
 
+        # Brand keywords — high confidence
         for kw in kompetitor.brand_keywords:
-            if keyword_match(kw, judul):
+            kw_lower = kw.lower()
+            if kw_lower in judul_lower:
                 score += 3
-            elif keyword_match(kw, summary):
+            elif kw_lower in summary_lower:
                 score += 2
 
+        # Non-general: regular keywords juga contributes
         if not is_general:
             for kw in kompetitor.keywords:
-                if kw.lower() in [b.lower() for b in kompetitor.brand_keywords]:
+                kw_lower = kw.lower()
+                # Hindari double-count kalau sudah di brand_keywords
+                if kw_lower in kompetitor.brand_keywords:
                     continue
-                if keyword_match(kw, judul):
+                if kw_lower in judul_lower:
                     score += 2
-                elif keyword_match(kw, summary):
+                elif kw_lower in summary_lower:
                     score += 1
 
+        # General Telco keywords — low confidence
         if is_general:
             for kw in kompetitor.keywords:
-                if keyword_match(kw, judul):
+                kw_lower = kw.lower()
+                if kw_lower in judul_lower:
                     score += 2
-                elif keyword_match(kw, summary):
+                elif kw_lower in summary_lower:
                     score += 1
 
     return score
 
 
+RELEVANSI_THRESHOLD = 2  # minimum score untuk dianggap relevan
+
+
 def is_artikel_relevan(judul: str, summary: str = "") -> bool:
     """
     Check relevansi dengan scoring system.
-    Threshold minimum: RELEVANSI_THRESHOLD poin.
+    Lebih akurat dari simple keyword matching.
     """
     score = hitung_relevansi_score(judul, summary)
     return score >= RELEVANSI_THRESHOLD
 
-
 # ============================================================
-# DATE HELPERS
-# ============================================================
-
-def is_artikel_recent(published_str: str, max_days: int = 60) -> bool:
-    """Return True jika artikel dipublish dalam max_days terakhir."""
-    if not published_str:
-        return True
-    try:
-        pub_date = email.utils.parsedate_to_datetime(published_str)
-        if pub_date.tzinfo is None:
-            pub_date = pub_date.replace(tzinfo=timezone.utc)
-        cutoff = datetime.now(timezone.utc) - timedelta(days=max_days)
-        return pub_date >= cutoff
-    except Exception:
-        return True
-
-
-# ============================================================
-# YAML LOADER — single source of truth
+# LOAD YAML FILE
 # ============================================================
 
 def load_sources_from_yaml(
     yaml_path: str = "configs/rss_feeds.yaml"
 ) -> List[NewsSource]:
     """
-    Load RSS sources dari YAML file.
-    Raise exception kalau file tidak ditemukan atau kosong.
-    Single source of truth — tidak ada hardcoded fallback.
+    Load RSS sources dari YAML file hasil rss_discovery.
+    Fallback ke hardcoded SOURCES kalau YAML tidak ditemukan.
     """
     yaml_file = Path(yaml_path)
 
     if not yaml_file.exists():
-        raise FileNotFoundError(
-            f"rss_feeds.yaml tidak ditemukan di {yaml_path}. "
-            f"Jalankan rss_discovery.py terlebih dahulu."
+        logger.warning(
+            f"YAML tidak ditemukan di {yaml_path}, "
+            f"menggunakan hardcoded sources sebagai fallback."
         )
+        return SOURCES
 
     with open(yaml_file, "r", encoding="utf-8") as f:
         feeds = yaml.safe_load(f)
 
     if not feeds:
-        raise ValueError(
-            f"rss_feeds.yaml kosong di {yaml_path}. "
-            f"Periksa file atau jalankan ulang rss_discovery.py."
-        )
+        logger.warning("YAML kosong, menggunakan hardcoded sources.")
+        return SOURCES
 
     sources = []
     for key, info in feeds.items():
+        # Skip entry yang tidak valid
         if not isinstance(info, dict) or "url" not in info:
             continue
 
@@ -229,11 +268,3 @@ def load_sources_from_yaml(
 
     logger.info(f"Loaded {len(sources)} sources dari {yaml_path}")
     return sources
-
-
-def get_active_sources() -> List[NewsSource]:
-    """
-    Return active sources dari YAML.
-    Single source of truth — selalu load dari YAML.
-    """
-    return load_sources_from_yaml()

@@ -20,6 +20,7 @@ def up(conn: sqlite3.Connection) -> None:
         ("content_fetched", "INTEGER DEFAULT 0"),
         ("nlp_processed", "INTEGER DEFAULT 0"),
         ("processing_error", "TEXT"),
+        ("fetch_attempts", "INTEGER DEFAULT 0"),
     ]
 
     existing = {

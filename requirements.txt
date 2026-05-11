@@ -31,3 +31,10 @@ feedparser>=6.0.0
 
 # yaml reader
 pyyaml
+
+# nlp core
+newspaper3k
+requests
+beautifulsoup4
+certifi
+lxml[html_clean]
