@@ -69,3 +69,7 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# ── models & data ─────────────────────────────────────────────
+echo "models/" >> .gitignore
+echo "data/training_data.db" >> .gitignore
