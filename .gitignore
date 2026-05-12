@@ -71,5 +71,6 @@ Thumbs.db
 htmlcov/
 
 # ── models & data ─────────────────────────────────────────────
-echo "models/"
-echo "data/training_data.db"
+models/
+data/training_data.db
+*.safetensors
