@@ -229,11 +229,10 @@ def run_collection() -> Dict:
         stats["sources_processed"] += 1
 
         for artikel in articles:
-            teks_untuk_filter = f"{artikel['judul']} {artikel['summary']}"
                     
             # relevansi da date filter
             # Filter 1 — relevance check
-            if not is_artikel_relevan(teks_untuk_filter):
+            if not is_artikel_relevan(artikel['judul'], artikel.get('summary', '')):
                 continue
 
             # Filter 2 — date check (harus di sini, bukan setelah return)

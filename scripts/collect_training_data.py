@@ -105,7 +105,7 @@ def collect_training_articles() -> dict:
 
                 # Relevance check — tetap pakai scoring
                 score = hitung_relevansi_score(judul, summary)
-                if score < 2:
+                if score < 1:
                     continue
 
                 stats["total_relevant"] += 1

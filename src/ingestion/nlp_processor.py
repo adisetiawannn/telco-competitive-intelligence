@@ -33,7 +33,8 @@ logger = logging.getLogger(__name__)
 
 DB_PATH       = "data/articles.db"
 MODEL_VERSION = "v1.0"
-MODEL_NAME    = "w11wo/indonesian-roberta-base-sentiment-classifier"
+MODEL_NAME    = "models/sentiment_v2/final" # path model IndoBERT yang sudah di-fine-tune
+MODEL_VERSION = "v2.0" # update version kalau ada perubahan signifikan di model atau preprocessing
 
 MAX_TOKEN_LENGTH = 512
 MIN_CONTENT_NLP  = 100
@@ -45,6 +46,31 @@ SENTIMENT_MAP = {
     "neutral":  0.0,
     "negative": -1.0,
 }
+
+# ============================================================
+# DOMAIN SIGNAL RULES — telco-specific post-processing
+# Override model output untuk kasus yang model masih salah.
+# Log setiap override untuk tracking di v3.0.
+# ============================================================
+
+NEGATIVE_SIGNALS = [
+    "gangguan", "rugi", "merugi", "kerugian",
+    "turun", "anjlok", "masalah", "gagal",
+    "complaint", "keluhan", "lambat", "lemot",
+    "padam", "mati", "down", "error",
+    "denda", "sanksi", "pelanggaran",
+    "phk", "pemecatan", "bangkrut",
+]
+
+POSITIVE_SIGNALS = [
+    "luncurkan", "meluncurkan", "hadirkan",
+    "tumbuh", "naik", "capai", "raih",
+    "ekspansi", "inovasi", "breakthrough",
+    "tercepat", "terluas", "terbesar",
+    "award", "penghargaan", "juara",
+    "investasi", "kerjasama", "partnership",
+    "profit", "untung", "pendapatan naik",
+]
 
 
 # ============================================================
@@ -127,6 +153,51 @@ def analyze_sentiment(
     except Exception as e:
         logger.error(f"Sentiment analysis failed: {e}")
         return "neutral", 0.0, 0.0
+
+# ============================================================
+# RULE BASED SENTIMENT ANALYSIS
+# ============================================================
+def post_process_sentiment(
+    text: str,
+    model_label: str,
+    model_score: float,
+    model_confidence: float
+) -> tuple[str, float, float]:
+    """
+    Rule-based post-processing untuk override model output.
+    
+    Dipakai karena model masih mengandalkan emotional cues dari
+    SmSA training, bukan domain knowledge telco.
+    
+    Setiap override di-log untuk tracking improvement di v3.0.
+    
+    Return: (label, score, confidence)
+    """
+    text_lower = text.lower()
+
+    # Check negative signals dulu — lebih kritikal untuk intelligence
+    for signal in NEGATIVE_SIGNALS:
+        if signal in text_lower:
+            if model_label != "negative":
+                logger.debug(
+                    f"RULE_OVERRIDE: '{signal}' "
+                    f"→ {model_label} overridden to negative"
+                )
+            return "negative", -1.0, 0.75
+
+    # Check positive signals
+    for signal in POSITIVE_SIGNALS:
+        if signal in text_lower:
+            if model_label != "positive":
+                logger.debug(
+                    f"RULE_OVERRIDE: '{signal}' "
+                    f"→ {model_label} overridden to positive"
+                )
+            return "positive", 1.0, 0.75
+
+    # Tidak ada signal — percaya model
+    return model_label, model_score, model_confidence
+
 
 
 # ============================================================
@@ -433,8 +504,16 @@ def run_nlp() -> dict:
         logger.info(f"[{idx+1}/{len(articles)}] {judul[:60]}...")
 
         try:
-            # 1. Sentiment
-            label, score, confidence = analyze_sentiment(model, content)
+            # 1. Sentiment — model prediction
+            raw_label, raw_score, raw_confidence = analyze_sentiment(
+                model, content
+            )
+
+            # 1b. Post-processing — rule-based override untuk domain telco
+            label, score, confidence = post_process_sentiment(
+                judul + " " + (content[:500] if content else ""),
+                raw_label, raw_score, raw_confidence
+            )
 
             # 2. Keywords per artikel
             keywords = extract_keywords(corpus, idx)
