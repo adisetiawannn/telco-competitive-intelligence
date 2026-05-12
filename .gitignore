@@ -71,5 +71,5 @@ Thumbs.db
 htmlcov/
 
 # ── models & data ─────────────────────────────────────────────
-echo "models/" >> .gitignore
-echo "data/training_data.db" >> .gitignore
+echo "models/"
+echo "data/training_data.db"
