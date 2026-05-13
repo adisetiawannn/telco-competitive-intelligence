@@ -57,3 +57,16 @@ Rules adalah heuristik, bukan ground truth. 0.75 berarti:
 - Rules bisa di-deprecate tanpa merusak historical data
 - Kalau confidence = 1.0: rule jadi otoritas absolut,
   error kecil jadi kebenaran permanen, tidak bisa evolve
+
+## Security Notes — Phase 4
+
+### Data yang dikirim ke Gemini API:
+- Hanya artikel dari portal berita publik
+- Tidak ada data internal atau data pelanggan
+
+### Untuk production deployment di Telkom:
+- Ganti Gemini API dengan Ollama (zero data egress)
+  ATAU Google Cloud Vertex AI dengan DPA yang sudah disetujui
+- Review dengan tim Information Security Telkom
+- Pastikan ada Data Processing Agreement dengan vendor LLM
+- Pertimbangkan on-premise LLM deployment untuk data sensitif
