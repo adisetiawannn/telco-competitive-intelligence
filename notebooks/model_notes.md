@@ -70,3 +70,9 @@ Rules adalah heuristik, bukan ground truth. 0.75 berarti:
 - Review dengan tim Information Security Telkom
 - Pastikan ada Data Processing Agreement dengan vendor LLM
 - Pertimbangkan on-premise LLM deployment untuk data sensitif
+
+## Known Limitations — Content Fetcher
+- Artikel dengan full_content < 200 chars di-skip
+- Kemungkinan penyebab: JS-rendered, paywall, image-only
+- Impact: ~5-10% artikel tidak masuk NLP pipeline
+- Mitigasi future: implement summary fallback untuk artikel penting
